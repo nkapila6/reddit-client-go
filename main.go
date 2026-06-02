@@ -15,6 +15,7 @@ import (
 )
 
 type Post struct {
+	Id           string `json:"id"`
 	Subreddit    string `json:"subreddit"`
 	Title        string `json:"title"`
 	Author       string `json:"author"`
@@ -35,6 +36,7 @@ func main() {
 	imagesOnly := flag.Bool("images", false, "only images or all post types")
 	flag.Parse()
 
+	id := 0
 	startURL := buildOldRedditURL(*sub, *sort, *timeFilter)
 
 	c := colly.NewCollector(
@@ -108,7 +110,9 @@ func main() {
 			return
 		}
 
+		id++
 		posts = append(posts, Post{
+			Id:           strconv.Itoa(id),
 			Subreddit:    *sub,
 			Title:        title,
 			CommentCount: num_comments,
@@ -143,6 +147,7 @@ func main() {
 		if err := c.Visit(cur); err != nil {
 			log.Fatal(err)
 		}
+		c.Wait()
 		cur = nextURL
 	}
 
@@ -156,9 +161,9 @@ func buildOldRedditURL(sub, sort, t string) string {
 	escaped := url.PathEscape(sub)
 
 	u := fmt.Sprintf("https://old.reddit.com/r/%s/%s/", escaped, sort)
-
 	q := url.Values{}
 	q.Set("limit", "100") // old reddit caps anyway; we paginate with "next"
+
 	if sort == "top" {
 		q.Set("t", t)
 	}
