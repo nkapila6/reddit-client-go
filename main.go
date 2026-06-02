@@ -16,8 +16,9 @@ import (
 type Post struct {
 	Subreddit string `json:"subreddit"`
 	Title     string `json:"title"`
-	Permalink string `json:"permalink"`
-	URL       string `json:"url"`
+	Author    string `json:"author"`
+	Permalink string `json:"permalink,omitempty"`
+	URL       string `json:"url,omitempty"`
 	Image     string `json:"image,omitempty"`
 	Domain    string `json:"domain,omitempty"`
 }
@@ -55,24 +56,41 @@ func main() {
 		}
 
 		title := strings.TrimSpace(h.ChildText("a.title"))
-		permalink := h.Request.AbsoluteURL(h.ChildAttr("a.title", "href"))
-		postURL := h.Attr("data-url")
-		postURL = h.Request.AbsoluteURL(postURL)
-		domain := strings.TrimSpace(h.Attr("data-domain"))
-
+		author := h.Attr("data-author")
+		permalink := h.Request.AbsoluteURL(h.Attr("data-permalink"))
+		if permalink == "" {
+			permalink = h.Request.AbsoluteURL(h.ChildAttr("a.comments", "href"))
+		}
 		if permalink == "" {
 			return
 		}
 
+		postURL := h.Request.AbsoluteURL(h.Attr("data-url"))
+		if postURL == "" || postURL == permalink {
+			postURL = permalink
+		}
+
+		domain := strings.TrimSpace(h.Attr("data-domain"))
+
 		if _, ok := seen[permalink]; ok {
 			return
 		}
-
 		seen[permalink] = struct{}{}
 
 		img := ""
 		if isImageURL(postURL) {
 			img = postURL
+			postURL = ""
+		} else {
+			thumbHref := h.Request.AbsoluteURL(h.ChildAttr("a.thumbnail", "href"))
+			if isImageURL(thumbHref) {
+				img = thumbHref
+			} else {
+				thumbSrc := h.Request.AbsoluteURL(h.ChildAttr("a.thumbnail img", "src"))
+				if isImageURL(thumbSrc) {
+					img = thumbSrc
+				}
+			}
 		}
 
 		if *imagesOnly && img == "" {
@@ -82,10 +100,11 @@ func main() {
 		posts = append(posts, Post{
 			Subreddit: *sub,
 			Title:     title,
+			Author:    author,
 			Permalink: permalink,
-			URL:       postURL,
-			Image:     img,
-			Domain:    domain,
+			// URL:       postURL,
+			Image:  img,
+			Domain: domain,
 		})
 	})
 
