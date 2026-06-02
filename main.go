@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,13 +15,15 @@ import (
 )
 
 type Post struct {
-	Subreddit string `json:"subreddit"`
-	Title     string `json:"title"`
-	Author    string `json:"author"`
-	Permalink string `json:"permalink,omitempty"`
-	URL       string `json:"url,omitempty"`
-	Image     string `json:"image,omitempty"`
-	Domain    string `json:"domain,omitempty"`
+	Subreddit    string `json:"subreddit"`
+	Title        string `json:"title"`
+	Author       string `json:"author"`
+	CommentCount string `json:"comments"`
+	Permalink    string `json:"permalink,omitempty"`
+	URL          string `json:"url,omitempty"`
+	Image        string `json:"image,omitempty"`
+	Domain       string `json:"domain,omitempty"`
+	Time         string `json:"time,omitempty"`
 }
 
 func main() {
@@ -58,6 +61,14 @@ func main() {
 		title := strings.TrimSpace(h.ChildText("a.title"))
 		author := h.Attr("data-author")
 		permalink := h.Request.AbsoluteURL(h.Attr("data-permalink"))
+		num_comments := h.Attr("data-comments-count")
+
+		ms, err := strconv.ParseInt(h.Attr("data-timestamp"), 10, 64)
+		t := ""
+		if err == nil {
+			t = time.Unix(0, ms*int64(time.Millisecond)).In(time.Local).Format("Monday, January 2, 2006 at 3:04:05 PM")
+		}
+
 		if permalink == "" {
 			permalink = h.Request.AbsoluteURL(h.ChildAttr("a.comments", "href"))
 		}
@@ -98,11 +109,13 @@ func main() {
 		}
 
 		posts = append(posts, Post{
-			Subreddit: *sub,
-			Title:     title,
-			Author:    author,
-			Permalink: permalink,
+			Subreddit:    *sub,
+			Title:        title,
+			CommentCount: num_comments,
+			Author:       author,
+			Permalink:    permalink,
 			// URL:       postURL,
+			Time:   t,
 			Image:  img,
 			Domain: domain,
 		})
