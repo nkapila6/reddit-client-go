@@ -1,5 +1,6 @@
 # reddit-client-go
-reddit http client go
+reddit scraper in gogogogogo
+json example in `examples/omscs.json`
 
 ## example usage
 ```bash
