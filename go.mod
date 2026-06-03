@@ -1,4 +1,4 @@
-module github.com/nkapila6/reddit-client-go
+module github.com/nkapila6/redditgopher
 
 go 1.26.3
 
